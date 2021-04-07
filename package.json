@@ -1,11 +1,13 @@
 {
-  "name": "express-generator-api",
-  "version": "0.0.1",
+  "name": "challenge-nodejs-baas-thiago",
+  "version": "0.1.0",
   "private": true,
+  "description": "Desafio de recrutamento da LiveOn BaaS",
   "scripts": {
     "start": "node ./src/index.js",
     "debug": "nodemon ./src/index.js",
-    "test": "jest"
+    "test": "jest",
+    "apidoc": "apidoc -o views/apidoc -f \".*\\.doc\\.js\" -f \"_apidoc.js\""
   },
   "nodemonConfig": {
     "ignore": [
@@ -22,6 +24,14 @@
       "jest"
     ]
   },
+  "apidoc": {
+    "title": "Desafio LiveOn BaaS",
+    "url": "http://localhost:3000",
+    "sampleUrl": "http://localhost:3000",
+    "template": {
+      "forceLanguage": "en"
+    }
+  },
   "dependencies": {
     "bcrypt": "^5.0.1",
     "body-parser": "^1.19.0",
@@ -29,6 +39,7 @@
     "debug": "~2.6.9",
     "dotenv": "^8.2.0",
     "dotenv-safe": "^8.2.0",
+    "ejs": "^3.1.6",
     "esm": "^3.2.25",
     "express": "~4.16.1",
     "express-formidable": "^1.2.0",

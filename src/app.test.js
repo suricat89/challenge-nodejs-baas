@@ -9,7 +9,7 @@ beforeAll(() => {
 })
 
 describe('Healthcheck', () => {
-  test('Ping', (done) => {
+  it('should ping', (done) => {
     request(app)
       .get('/healthcheck/ping')
       .expect(StatusCodes.OK, {
@@ -18,6 +18,19 @@ describe('Healthcheck', () => {
       .end((err, res) => {
         if (err) return done(err)
         done()
+      })
+  })
+})
+
+describe('API Doc', () => {
+  it('should redirect root path to /apidoc', (done) => {
+    request(app)
+      .get('/')
+      .expect(StatusCodes.PERMANENT_REDIRECT)
+      .end((err, res) => {
+        if (err) return done(err)
+        if (res.headers.location === '/apidoc') done()
+        else done('Redirect did not happen as expected')
       })
   })
 })

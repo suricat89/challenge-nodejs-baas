@@ -63,6 +63,7 @@ const getCustomer = async (req, res) => {
         .limit(limit)
         .populate('customerDocuments', getFieldListString(fields.customerDocuments, ' ', false))
         .populate('account', getFieldListString(fields.account, ' ', false))
+        .populate('user', 'userName profile')
         .select(getFieldListString(fields.default, ' ', false))
         .exec()
 
@@ -81,7 +82,7 @@ const getCustomer = async (req, res) => {
 
       res.status(StatusCodes.OK).json({ customers: customer ? [customer] : [] })
     } catch (error) {
-      new ErrorOutput(StatusCodes.INTERNAL_SERVER_ERROR, 'Error fetching customer.', error).sendResponse(res)
+      new ErrorOutput(StatusCodes.INTERNAL_SERVER_ERROR, 'Error fetching customer', error).sendResponse(res)
     }
   }
 }
