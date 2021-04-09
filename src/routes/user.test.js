@@ -252,7 +252,7 @@ describe('Create new user', () => {
         userName: 'test_user',
         password: '12345678'
       })
-      .expect(StatusCodes.OK, {
+      .expect(StatusCodes.CREATED, {
         user: {
           _id: 2
         }

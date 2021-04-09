@@ -77,6 +77,7 @@ const getCustomer = async (req, res) => {
         .findOne({ cpf: req.query.cpf })
         .populate('customerDocuments', getFieldListString(fields.customerDocuments, ' ', false))
         .populate('account', getFieldListString(fields.account, ' ', false))
+        .populate('user', 'userName profile')
         .select(getFieldListString(fields.default, ' ', false))
         .exec()
 

@@ -1,0 +1,1643 @@
+---
+openapi: 3.0.2
+info:
+  title: Challenge NodeJS LiveOn BaaS
+  version: 0.1.0
+  description: Bank API developed as recruitment challenge
+  contact:
+    name: Thiago Monteiro de Paula
+    email: thmonteiropaula@gmail.com
+servers:
+- url: http://localhost:3000
+  description: Local server
+tags:
+- name: Customer
+  description: Performs operations on the customer registration
+- name: Customer Account
+  description: Can create and query for customers accounts
+- name: Customer Document
+  description: Can upload, download and query for customers documents
+- name: Transaction
+  description: Performs transactions on the customer's account, such as withdraws,
+    deposits, debit card or P2P
+- name: User
+  description: Can register an user and use it to login on the API
+paths:
+  "/customer":
+    get:
+      tags:
+      - Customer
+      summary: Filters a specific customer or lists all of them
+      description: If you're logged in as a Customer, you're only allowed to query
+        for your own data
+      operationId: getCustomer
+      parameters:
+      - in: query
+        name: cpf
+        example: '14789632555'
+        schema:
+          type: number
+        required: false
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      responses:
+        '200':
+          description: Customer(s) listed successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  customers:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/CustomerOutputObj"
+                        - type: object
+                          properties:
+                            customerDocuments:
+                              type: array
+                              items:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerDocumentOutputObj"
+                            account:
+                              allOf:
+                              - $ref: "#/components/schemas/AccountOutputObj"
+                            user:
+                              allOf:
+                              - $ref: "#/components/schemas/UserInputObj"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot query data from another client"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Can be an error fetching customer,
+            JWT authentication, or any unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    post:
+      tags:
+      - Customer
+      summary: Inserts a new customer on the database
+      description: Only a Manager has permission to insert new Customers
+      operationId: postCustomer
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CustomerInputObj"
+              - type: object
+                properties:
+                  address:
+                    type: array
+                    items:
+                      allOf:
+                      - $ref: "#/components/schemas/AddressInputObj"
+              required:
+              - cpf
+              - name
+      responses:
+        '201':
+          description: "[CREATED] Customer inserted successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  customer:
+                    allOf:
+                    - $ref: "#/components/schemas/CustomerOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can insert new customers"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    put:
+      tags:
+      - Customer
+      summary: Update a customer on the database
+      description: Only a Manager has permission to update Customers data
+      operationId: putCustomer
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: "#/components/schemas/CustomerInputObj"
+              - type: object
+                properties:
+                  address:
+                    type: array
+                    items:
+                      allOf:
+                      - $ref: "#/components/schemas/AddressInputObj"
+              required:
+              - cpf
+              - name
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  customer:
+                    allOf:
+                    - $ref: "#/components/schemas/CustomerOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can update a customer's data"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/customer/address":
+    patch:
+      tags:
+      - Customer
+      summary: Inserts a new address for a customer on the database
+      description: Only a Manager has permission to insert new address for Customers
+      operationId: patchCustomerAddress
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - type: object
+                properties:
+                  cpf:
+                    type: number
+                    example: 14789632555
+              - type: object
+                properties:
+                  address:
+                    allOf:
+                    - $ref: "#/components/schemas/AddressOutputObj"
+              required:
+              - cpf
+              - address
+      responses:
+        '201':
+          description: "[CREATED] Customer address inserted successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  customer:
+                    allOf:
+                    - $ref: "#/components/schemas/CustomerOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can insert new customers"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    delete:
+      tags:
+      - Customer
+      summary: Removes an address from a customer
+      description: Only a Manager has permission to remove address from Customers
+      operationId: deleteCustomerAddress
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - type: object
+                properties:
+                  cpf:
+                    type: number
+                    example: 14789632555
+              - type: object
+                properties:
+                  address:
+                    allOf:
+                    - $ref: "#/components/schemas/AddressOutputObj"
+              required:
+              - cpf
+              - address
+      responses:
+        '200':
+          description: Customer address removed successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  customer:
+                    allOf:
+                    - $ref: "#/components/schemas/CustomerOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can insert new customers"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/customer/account":
+    post:
+      tags:
+      - Customer Account
+      summary: Creates a bank account for a customer
+      description: |-
+        Only a Manager has permission to create accounts.<br/>
+        The account will be created with zero balance and bounded to the customer.
+      operationId: postCustomerAccount
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - cpf
+              - agency
+              - accountNumber
+              allOf:
+              - type: object
+                properties:
+                  cpf:
+                    type: number
+                    example: 14789632555
+              - $ref: "#/components/schemas/AccountInputObj"
+      responses:
+        '201':
+          description: "[CREATED] Account created successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  customer:
+                    allOf:
+                    - $ref: "#/components/schemas/CustomerOutputObj"
+                    - type: object
+                      properties:
+                        account:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can insert new customers"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    get:
+      tags:
+      - Customer Account
+      summary: Get account data
+      description: |-
+        A customer only has access rights to see his own account data.<br/>
+        This function will return a complete bank statement based on the date filters.
+      operationId: getCustomerAccount
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      - in: query
+        name: agency
+        example: 1234
+        required: true
+        schema:
+          type: number
+      - in: query
+        name: accountNumber
+        example: 1002345
+        required: true
+        schema:
+          type: number
+      - in: query
+        name: startDate
+        example: '2021-04-01T18:09:05.000Z'
+        schema:
+          type: string
+          default: Date.getDate() - 7
+      - in: query
+        name: endDate
+        example: '2021-04-08T18:09:05.000Z'
+        schema:
+          type: string
+          default: Date.now()
+      responses:
+        '200':
+          description: Account data fetched successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  account:
+                    allOf:
+                    - $ref: "#/components/schemas/AccountOutputObj"
+                    - type: object
+                      properties:
+                        customer:
+                          allOf:
+                          - $ref: "#/components/schemas/CustomerInputObj"
+                        transactions:
+                          type: array
+                          items:
+                            allOf:
+                            - $ref: "#/components/schemas/TransactionOutputObj"
+                            - type: object
+                              properties:
+                                originAccount:
+                                  allOf:
+                                  - $ref: "#/components/schemas/AccountInputObj"
+                                  - type: object
+                                    properties:
+                                      customer:
+                                        allOf:
+                                        - $ref: "#/components/schemas/CustomerInputObj"
+                                destinationAccount:
+                                  allOf:
+                                  - $ref: "#/components/schemas/AccountInputObj"
+                                  - type: object
+                                    properties:
+                                      customer:
+                                        allOf:
+                                        - $ref: "#/components/schemas/CustomerInputObj"
+        '400':
+          description: "[BAD REQUEST] Missing or incorrect parameters in request body"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot query data from another client's
+            account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Account not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/customer/account/list":
+    get:
+      tags:
+      - Customer Account
+      description: |-
+        Gets a list of one or more customer accounts.<br/>
+        Will display only account header fields, without transaction list.<br/>
+        Only a Manager can list accounts from other clients.
+      summary: List accounts header data
+      operationId: getCustomerAccountList
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      - in: query
+        name: agency
+        example: 1234
+        schema:
+          type: number
+      - in: query
+        name: accountNumber
+        example: 1002345
+        schema:
+          type: number
+      - in: query
+        name: limit
+        description: The maximum ammount of account records that will be returned
+        example: 50
+        schema:
+          type: number
+          default: 20
+      - in: query
+        name: offset
+        description: To use along with 'limit', where you can paginate the results
+        example: 0
+        schema:
+          type: number
+          default: 0
+      responses:
+        '200':
+          description: Account(s) fetched successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      allOf:
+                      - $ref: "#/components/schemas/AccountOutputObj"
+                      - type: object
+                        properties:
+                          customer:
+                            allOf:
+                            - $ref: "#/components/schemas/CustomerInputObj"
+                            - properties:
+                                address:
+                                  type: array
+                                  items:
+                                    allOf:
+                                      - $ref: "#/components/schemas/AddressOutputObj"
+                              
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot query data from another client's
+            account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/transaction/withdraw":
+    post:
+      tags:
+      - Transaction
+      summary: Performs a withdrawal transaction
+      description: |-
+        This is where a client can withdraw money from his own account.<br/>
+        Managers can withdraw values from any account.
+      operationId: postTransactionWithdraw
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - agency
+              - accountNumber
+              - value
+              allOf:
+              - $ref: "#/components/schemas/SimpleTransactionInputObj"
+      responses:
+        '200':
+          description: Transaction done successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  transaction:
+                    allOf:
+                    - $ref: "#/components/schemas/TransactionOutputObj"
+                    - type: object
+                      properties:
+                        originAccount:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+                          - properties:
+                              customer:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerInputObjWithID"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One customer cannot make transactions using another
+            customer's account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Account not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '412':
+          description: "[PRECONDITION FAILED] Not enough funds"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/transaction/deposit":
+    post:
+      tags:
+      - Transaction
+      summary: Performs a deposit transaction
+      description: This is where a client can deposit money in own account. <br/>
+        Managers can deposit values on any account.
+      operationId: postTransactionDeposit
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - agency
+              - accountNumber
+              - value
+              allOf:
+              - $ref: "#/components/schemas/SimpleTransactionInputObj"
+      responses:
+        '200':
+          description: Transaction done successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  transaction:
+                    allOf:
+                    - $ref: "#/components/schemas/TransactionOutputObj"
+                    - type: object
+                      properties:
+                        destinationAccount:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+                          - properties:
+                              customer:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerInputObjWithID"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One customer cannot make transactions using another
+            customer's account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Account not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/transaction/debit":
+    post:
+      tags:
+      - Transaction
+      summary: Performs a debit card transaction
+      description: This is where a client can do a debit card transaction.
+      operationId: postTransactionDebit
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - agency
+              - accountNumber
+              - value
+              allOf:
+              - $ref: "#/components/schemas/SimpleTransactionInputObj"
+      responses:
+        '200':
+          description: Transaction done successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  transaction:
+                    allOf:
+                    - $ref: "#/components/schemas/TransactionOutputObj"
+                    - type: object
+                      properties:
+                        originAccount:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+                          - properties:
+                              customer:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerInputObjWithID"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One customer cannot make transactions using another
+            customer's account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Account not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '412':
+          description: "[PRECONDITION FAILED] Not enough funds"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/transaction/p2p":
+    post:
+      tags:
+      - Transaction
+      summary: Performs a P2P transaction (Transfer from one client to another)
+      description: |-
+        This is where a client can transfer money from his account to any other account. <br/>
+        Managers can register p2p transactions from and to any account.
+      operationId: postTransactionP2P
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - originAccount
+              - destinationAccount
+              - value
+              properties:
+                value:
+                  type: number
+                  example: 100
+                originAccount:
+                  required:
+                  - agency
+                  - accountNumber
+                  allOf:
+                  - $ref: "#/components/schemas/AccountInputObj"
+                destinationAccount:
+                  required:
+                  - agency
+                  - accountNumber
+                  allOf:
+                  - $ref: "#/components/schemas/AccountInputObj"
+      responses:
+        '200':
+          description: Transaction done successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  transaction:
+                    allOf:
+                    - $ref: "#/components/schemas/TransactionOutputObj"
+                    - type: object
+                      properties:
+                        originAccount:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+                          - properties:
+                              customer:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerInputObjWithID"
+                        destinationAccount:
+                          allOf:
+                          - $ref: "#/components/schemas/AccountOutputObj"
+                          - properties:
+                              customer:
+                                allOf:
+                                - $ref: "#/components/schemas/CustomerInputObjWithID"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One customer cannot make transactions using another
+            customer's account"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Origin and/or destination account not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '412':
+          description: "[PRECONDITION FAILED] Origin account and destination account
+            are the same"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/user":
+    post:
+      tags:
+      - User
+      summary: Creates an user for a customer
+      description: |-
+        Creates and bind an user to a customer. <br/>
+        Only a Manager can create users
+      operationId: postUser
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - cpf
+              - userName
+              - password
+              allOf:
+              - type: object
+                properties:
+                  cpf:
+                    type: number
+                    example: 14789632555
+                  password:
+                    type: string
+                    example: password123
+              - $ref: "#/components/schemas/UserInputObj"
+      responses:
+        '201':
+          description: "[CREATED] User created successfully"
+          content:
+            application/json:
+              schema:
+                properties:
+                  user:
+                    allOf:
+                    - $ref: "#/components/schemas/UserOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Only a manager can create new users"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '412':
+          description: "[PRECONDITION FAILED] Customer already have an user"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    put:
+      tags:
+      - User
+      summary: Updates an user
+      description: |-
+        Updates the user profile or password. <br/>
+        A customer can only update his own user, but a Manager can update any. <br/>
+        A customer cannot promote himself to Manager.
+      operationId: putUser
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - userName
+              allOf:
+              - type: object
+                properties:
+                  password:
+                    type: string
+                    example: password123
+              - $ref: "#/components/schemas/UserInputObj"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  user:
+                    allOf:
+                    - $ref: "#/components/schemas/UserOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '401':
+          description: "[UNAUTHORIZED] Missing request header 'x-access-token'"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One customer cannot change another customer's
+            user"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] User not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/user/login":
+    post:
+      tags:
+      - User
+      summary: JWT Login on the API
+      description: |-
+        Login on the API and generates a token that must be passed as a header to all other requests. <br/>
+        The token is valid for a delimited ammount of time defined on the ENV 'JWT_EXPIRITY_TIME'.
+      operationId: postUserLogin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+              - userName
+              - password
+              allOf:
+              - type: object
+                properties:
+                  userName:
+                    type: string
+                    example: thmonteiropaula
+                  password:
+                    type: string
+                    example: password123
+      responses:
+        '200':
+          description: Logged in successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  auth:
+                    type: boolean
+                    example: true
+                    description: Indicates that the user is logged in
+                    default: true
+                  token:
+                    type: string
+                    description: The token that must be passed in the 'x-access-token'
+                      header in all other API requests
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MDY4NmNlOWVlNjJlMzNmNzkyYzA5YTMiLCJ1c2VyTmFtZSI6InN1cmljYXQiLCJ1c2VyUHJvZmlsZSI6Ik1BTkFHRVIiLCJpYXQiOjE2MTc0ODg3NjAsImV4cCI6MTYxODA5MzU2MH0.o4Cg-fnSwzfY-2JnYaqBsuIcsPDBXWpHiXIhvP-spgA
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] Password did not match"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] User not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/user/logout":
+    post:
+      tags:
+      - User
+      summary: Logout of the API
+      description: This request does nothing but return a null token to replace the
+        one that was being used
+      operationId: postUserLogout
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  auth:
+                    type: boolean
+                    example: false
+                    description: Indicates that the user is logged in
+                    default: false
+                  token:
+                    type: string
+                    description: The null token that should replace the current one
+                      in the application using this API
+                    example:
+  "/user/validateAdminUser":
+    post:
+      tags:
+      - User
+      summary: Check admin user integrity
+      description: If there is no Admin user on the database, it'll create one using
+        the password defined in the ENV 'ADMIN_USER_PASSWORD'
+      operationId: postUserValidateAdminUser
+      responses:
+        '200':
+          description: Admin user OK
+          content:
+            application/json:
+              schema:
+                properties:
+                  user:
+                    allOf:
+                    - $ref: "#/components/schemas/UserOutputObj"
+  "/customer/document":
+    post:
+      tags:
+      - Customer Document
+      summary: Uploads a new customer's document
+      description: |-
+        Uploads a document to the server and binds to the customer.<br/>
+        A customer can only upload data to his own profile, but a manager can upload documents for any customer.
+      operationId: postCustomerDocument
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              required:
+              - cpf
+              - documentName
+              - document
+              type: object
+              properties:
+                cpf:
+                  type: number
+                  example: 14789632555
+                documentName:
+                  type: string
+                  description: The document name is unique per customer. If there
+                    is already a document in the server with the same name, it'll
+                    be replaced with the new one just send.
+                  example: Birth certificate
+                document:
+                  type: string
+                  format: binary
+                  description: The document file to be sent
+      responses:
+        '200':
+          description: Document sent successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: "#/components/schemas/CustomerOutputObj"
+                - properties:
+                    customerDocuments:
+                      type: array
+                      items:
+                        $ref: "#/components/schemas/CustomerDocumentOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot upload another client's document"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+    get:
+      tags:
+      - Customer Document
+      description: |-
+        Downloads a document from a customer. <br/>
+        A customer can only download his own docs, but a manager can download from any customer.
+      summary: Downloads a customer's document
+      operationId: getCustomerDocument
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      - in: query
+        name: cpf
+        example: 14789632555
+        schema:
+          type: number
+      - in: query
+        name: documentName
+        example: Birth certificate
+        schema:
+          type: string
+      - in: query
+        name: documentId
+        example: 6065502b7145a080110b6d50
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Will be the file that was previously uploaded, with the 'content-type'
+            header in it's own MIME type, can be an 'application/pdf', 'image/png',
+            'image/jpeg', etc.
+          content:
+            application/pdf: {}
+            image/png: {}
+            image/jpeg: {}
+        '400':
+          description: "[BAD REQUEST] You should either provide 'cpf' + 'documentName'
+            or the 'documentId' to get a document file"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot fetch another client's document"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Document or customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+  "/customer/document/list":
+    get:
+      tags:
+      - Customer Document
+      description: Lists all of the customer's documents. <br/>
+        A customer can only list his own docs, but a manager can list from any customer.
+      summary: List customer's documents available for download
+      operationId: getCustomerDocumentList
+      parameters:
+      - in: header
+        name: x-access-token
+        description: Access token got through [POST] /user/login
+        required: true
+        schema:
+          $ref: "#components/headers/accessToken"
+      - in: query
+        name: cpf
+        example: 14789632555
+        required: true
+        schema:
+          type: number
+      responses:
+        '200':
+          description: Successfully fetched the customer's documents list
+          content:
+            application/json:
+              schema:
+                properties:
+                  customerDocuments:
+                    type: array
+                    items:
+                      allOf:
+                      - $ref: "#/components/schemas/CustomerDocumentOutputObj"
+        '400':
+          description: "[BAD REQUEST] Missing parameters in request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '403':
+          description: "[FORBIDDEN] One client cannot fetch another client's document"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '404':
+          description: "[NOT FOUND] Customer not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+        '500':
+          description: "[INTERNAL SERVER ERROR] Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOutput"
+components:
+  headers:
+    accessToken:
+      example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MDY4NmNlOWVlNjJlMzNmNzkyYzA5YTMiLCJ1c2VyTmFtZSI6InN1cmljYXQiLCJ1c2VyUHJvZmlsZSI6Ik1BTkFHRVIiLCJpYXQiOjE2MTc0ODg3NjAsImV4cCI6MTYxODA5MzU2MH0.o4Cg-fnSwzfY-2JnYaqBsuIcsPDBXWpHiXIhvP-spgA
+      schema:
+        type: string
+  schemas:
+    ErrorOutput:
+      type: object
+      properties:
+        error:
+          type: object
+          required:
+          - message
+          properties:
+            message:
+              type: string
+              description: The user message with the error reason
+              example: The user message with the error reason
+            details:
+              type: object
+              description: The error details object returned, if any. It may be a
+                mongoDb object or any other
+    CustomerInputObj:
+      type: object
+      properties:
+        cpf:
+          type: number
+          example: 14789632555
+        rg:
+          type: string
+          example: MG1450029
+        name:
+          type: string
+          example: Thiago Monteiro de Paula
+    CustomerInputObjWithID:
+      allOf:
+      - $ref: "#/components/schemas/CustomerInputObj"
+      - properties:
+          _id:
+            type: string
+            description: The Customer's unique ID stored in the database
+            example: 60664ee411751ee21019b658
+    CustomerOutputObj:
+      allOf:
+      - $ref: "#/components/schemas/CustomerInputObj"
+      - type: object
+        properties:
+          _id:
+            type: string
+            description: The Customer's unique ID stored in the database
+            example: 60664ee411751ee21019b658
+          address:
+            type: array
+            items:
+              allOf:
+              - $ref: "#/components/schemas/AddressOutputObj"
+    AddressInputObj:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - HOME
+          - BUSINESS
+          - BILLING
+          - OTHER
+          example: HOME
+        streetName:
+          type: string
+          example: Nameless st
+        streetNumber:
+          type: number
+          example: 123
+        city:
+          type: string
+          example: Franca
+        state:
+          type: string
+          example: SP
+        postalCode:
+          type: string
+          example: '14400000'
+    AddressOutputObj:
+      allOf:
+      - $ref: "#/components/schemas/AddressInputObj"
+      - type: object
+        properties:
+          _id:
+            type: string
+            description: Unique ID of this address stored on database
+            example: 60664ee411751ee21019b659
+    AccountInputObj:
+      type: object
+      properties:
+        agency:
+          type: number
+          example: 1234
+        accountNumber:
+          type: number
+          example: 1001287
+    AccountOutputObj:
+      allOf:
+      - $ref: "#/components/schemas/AccountInputObj"
+      - type: object
+        properties:
+          _id:
+            type: string
+            description: The account's unique ID stored in the database
+            example: 60665a82beda3670757f2c4b
+          balance:
+            type: number
+            description: The account's current balance value
+            example: 1200
+          overdraft:
+            type: number
+            description: The credit value allowed for this client to stay with negative
+              balance
+            example: 1000
+    SimpleTransactionInputObj:
+      allOf:
+      - $ref: "#/components/schemas/AccountInputObj"
+      - type: object
+        properties:
+          value:
+            type: number
+            example: 100
+    TransactionInputObj:
+      type: object
+      properties:
+        transactionType:
+          type: string
+          enum:
+          - WITHDRAW
+          - DEPOSIT
+          - DEBIT
+          - P2P
+          example: DEPOSIT
+        dateTime:
+          type: string
+          description: The Date object stored with the application server's transaction
+            date/time
+          default: "`Date.now()`"
+          example: '2021-04-07T18:09:05.000Z'
+        value:
+          type: number
+          example: 100
+    TransactionOutputObj:
+      type: object
+      allOf:
+      - $ref: "#/components/schemas/TransactionInputObj"
+      - properties:
+          balanceAfter:
+            type: number
+            description: The balance of the account right after computing this transaction
+              value
+            example: 1200
+          _id:
+            type: string
+            description: The transaction ID stored on the database
+            example: 606f5656c43e64c42dbd3b49
+    CustomerDocumentInputObj:
+      type: object
+      properties:
+        documentName:
+          type: string
+          description: The name is unique for each customer and may contain spaces
+          example: Birth certificate
+        documentType:
+          type: string
+          description: The document file MIME type
+          example: application/pdf
+    CustomerDocumentOutputObj:
+      allOf:
+      - $ref: "#/components/schemas/CustomerDocumentInputObj"
+      - type: object
+        properties:
+          _id:
+            type: string
+            description: The document's unique ID stored in the database
+            example: 6065502b7145a080110b6d50
+    UserInputObj:
+      type: object
+      properties:
+        profile:
+          type: string
+          enum:
+          - MANAGER
+          - CLIENT
+          example: MANAGER
+        userName:
+          type: string
+          description: The user name that will be used to log in the API
+          example: thmonteiropaula
+    UserOutputObj:
+      allOf:
+      - $ref: "#/components/schemas/UserInputObj"
+      - properties:
+          password:
+            type: string
+            description: The password hash
+            example: 2b$10$O1ooc6IHb03jdnxnrTE62.chF6AMgZT/R5Sba8bYWeWAIQR1JIDfe
+          _id:
+            type: string
+            description: The unique ID of the saved user in the database
+            example: 6068ec3686d02b81494c914b

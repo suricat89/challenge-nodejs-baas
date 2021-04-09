@@ -116,7 +116,7 @@ const createNewUser = async (req, res) => {
       .populate('user')
       .exec()
 
-    res.status(StatusCodes.OK).json({ user: customer.user })
+    res.status(StatusCodes.CREATED).json({ user: customer.user })
   } catch (error) {
     return new ErrorOutput(StatusCodes.INTERNAL_SERVER_ERROR, 'Unexpected error.', error).sendResponse(res)
   }

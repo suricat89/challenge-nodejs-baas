@@ -82,7 +82,7 @@ const simpleTransaction = async (type, transactionData, userId, userProfile) => 
     .findById(transaction._id)
     .populate({
       path: 'originAccount',
-      select: 'agency accountNumber balance customer overdraft',
+      select: '-transactions',
       populate: {
         path: 'customer',
         select: 'rg cpf name'
@@ -90,7 +90,7 @@ const simpleTransaction = async (type, transactionData, userId, userProfile) => 
     })
     .populate({
       path: 'destinationAccount',
-      select: 'agency accountNumber balance customer overdraft',
+      select: '-transactions',
       populate: {
         path: 'customer',
         select: 'rg cpf name'
@@ -246,7 +246,7 @@ const newP2P = async (req, res) => {
       .findById(transaction._id)
       .populate({
         path: 'originAccount',
-        select: 'agency accountNumber balance customer overdraft',
+        select: '-transactions',
         populate: {
           path: 'customer',
           select: 'rg cpf name'
@@ -254,7 +254,7 @@ const newP2P = async (req, res) => {
       })
       .populate({
         path: 'destinationAccount',
-        select: 'agency accountNumber balance customer overdraft',
+        select: '-transactions',
         populate: {
           path: 'customer',
           select: 'rg cpf name'
