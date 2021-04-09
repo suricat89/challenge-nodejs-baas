@@ -1,6 +1,6 @@
 {
   "name": "challenge-nodejs-baas-thiago",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Desafio de recrutamento da LiveOn BaaS",
   "scripts": {
