@@ -38,7 +38,7 @@ app.get('/healthcheck/ping', (req, res) => {
 })
 
 app.get('/', (req, res) => {
-  res.redirect('/swaggerdoc', StatusCodes.PERMANENT_REDIRECT)
+  res.redirect('/openapi', StatusCodes.PERMANENT_REDIRECT)
 })
 
 export default app

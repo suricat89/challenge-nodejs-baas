@@ -23,13 +23,13 @@ describe('Healthcheck', () => {
 })
 
 describe('API Doc', () => {
-  it('should redirect root path to /apidoc', (done) => {
+  it('should redirect root path to /openapi', (done) => {
     request(app)
       .get('/')
       .expect(StatusCodes.PERMANENT_REDIRECT)
       .end((err, res) => {
         if (err) return done(err)
-        if (res.headers.location === '/apidoc') done()
+        if (res.headers.location === '/openapi') done()
         else done('Redirect did not happen as expected')
       })
   })

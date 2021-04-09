@@ -9,6 +9,7 @@ import CustomerDocument from '../model/database/customerDocument'
 
 beforeAll(() => {
   dotenvMock.config()
+  jest.mock('fs')
 })
 
 const spyGetUserCustomer = () => {
